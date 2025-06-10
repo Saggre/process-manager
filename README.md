@@ -48,7 +48,7 @@ try{
 try{
     $stdoutStrategy = new StreamedOutputStrategy(
         fn(string $data) => print $data
-    );
+    )->setChunkLength(128);
 
     $result = (new ProcessService('/usr/bin/program'))
                 ->setStdoutStrategy($stdoutStrategy)

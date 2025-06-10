@@ -4,7 +4,7 @@ namespace Saggre\ProcessManager\Strategy;
 
 use InvalidArgumentException;
 
-class StreamedOutputStrategy implements OutputStrategyInterface
+class StreamedOutputStrategy extends OutputStrategy implements OutputStrategyInterface
 {
     protected $outputHandler;
 

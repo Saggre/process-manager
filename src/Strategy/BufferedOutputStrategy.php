@@ -2,7 +2,7 @@
 
 namespace Saggre\ProcessManager\Strategy;
 
-class BufferedOutputStrategy implements OutputStrategyInterface
+class BufferedOutputStrategy extends OutputStrategy implements OutputStrategyInterface
 {
     protected string $output = '';
 

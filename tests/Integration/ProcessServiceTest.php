@@ -12,7 +12,7 @@ class ProcessServiceTest extends TestCase
 {
     public function testRunPhp(): void
     {
-        $stdoutStrategy = new BufferedOutputStrategy();
+        $stdoutStrategy = (new BufferedOutputStrategy())->setChunkLength(128);
         $stderrStrategy = new BufferedOutputStrategy();
 
         try {

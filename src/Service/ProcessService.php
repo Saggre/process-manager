@@ -51,15 +51,8 @@ class ProcessService
         // Close input pipe.
         fclose($pipes[0]);
 
-        $this->processPipe(
-            $pipes[1],
-            fn($line) => $this->stdoutStrategy?->processOutputChunk($line)
-        );
-
-        $this->processPipe(
-            $pipes[2],
-            fn($line) => $this->stderrStrategy?->processOutputChunk($line)
-        );
+        $this->processPipe($pipes[1], $this->stdoutStrategy);
+        $this->processPipe($pipes[2], $this->stderrStrategy);
 
         fclose($pipes[1]);
         fclose($pipes[2]);
@@ -118,20 +111,21 @@ class ProcessService
      * Process pipe output.
      *
      * @param $pipe
-     * @param $callback
+     * @param OutputStrategyInterface|null $outputStrategy
      * @return void
      */
-    protected function processPipe(&$pipe, $callback = null): void
+    protected function processPipe(&$pipe, ?OutputStrategyInterface $outputStrategy = null): void
     {
+        $length = $outputStrategy?->getChunkLength() ?? 1024;
+
         while (!feof($pipe)) {
-            $line = fgets($pipe, 1024);
-            if (strlen($line) == 0) {
+            $line = fgets($pipe, $length);
+
+            if (strlen($line) === 0) {
                 break;
             }
 
-            if (is_callable($callback)) {
-                call_user_func($callback, $line);
-            }
+            $outputStrategy?->processOutputChunk($line);
 
             if (ob_get_level() > 0) {
                 ob_flush();
