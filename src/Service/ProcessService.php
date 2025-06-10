@@ -5,6 +5,7 @@ namespace Saggre\ProcessManager\Service;
 use Saggre\ProcessManager\Exception\ProcessCreateException;
 use Saggre\ProcessManager\Exception\ProcessRunException;
 use Saggre\ProcessManager\Model\ProcessResult;
+use Saggre\ProcessManager\Strategy\InputStrategyInterface;
 use Saggre\ProcessManager\Strategy\OutputStrategyInterface;
 use Stringable;
 
@@ -13,6 +14,7 @@ class ProcessService
     public function __construct(
         protected string|Stringable        $binaryPath,
         protected string|Stringable        $input = '',
+        protected ?InputStrategyInterface  &$stdinStrategy = null,
         protected ?OutputStrategyInterface &$stdoutStrategy = null,
         protected ?OutputStrategyInterface &$stderrStrategy = null,
     )
@@ -22,6 +24,12 @@ class ProcessService
     public function setInput(Stringable|string $input): ProcessService
     {
         $this->input = $input;
+        return $this;
+    }
+
+    public function setInputStrategy(?InputStrategyInterface $stdinStrategy): ProcessService
+    {
+        $this->stdinStrategy = $stdinStrategy;
         return $this;
     }
 
@@ -48,12 +56,19 @@ class ProcessService
     {
         $process = $this->createProcess($this->input, $pipes);
 
-        // Close input pipe.
+        while (true) {
+            $inputChunk = (string)$this->stdinStrategy?->getNextInputChunk();
+            fwrite($pipes[0], $inputChunk);
+
+            $this->processPipe($pipes[1], $this->stdoutStrategy);
+            $this->processPipe($pipes[2], $this->stderrStrategy);
+
+            if (empty($inputChunk)) {
+                break;
+            }
+        }
+
         fclose($pipes[0]);
-
-        $this->processPipe($pipes[1], $this->stdoutStrategy);
-        $this->processPipe($pipes[2], $this->stderrStrategy);
-
         fclose($pipes[1]);
         fclose($pipes[2]);
 
@@ -114,7 +129,10 @@ class ProcessService
      * @param OutputStrategyInterface|null $outputStrategy
      * @return void
      */
-    protected function processPipe(&$pipe, ?OutputStrategyInterface $outputStrategy = null): void
+    protected function processPipe(
+        &$pipe,
+        ?OutputStrategyInterface $outputStrategy = null
+    ): void
     {
         $length = $outputStrategy?->getChunkLength() ?? 1024;
 

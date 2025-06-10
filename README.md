@@ -12,11 +12,12 @@ and output, and manage their execution.
 
 ```php
 try{
-    $result = (new ProcessService('/usr/bin/program'))
+    $result = (new ProcessService('/usr/bin/node'))
                 ->setInput('--version')
                 ->run();
     
-    $exitCode = $result->getExitCode();
+    echo $result->getExitCode();
+    // 0
 } catch (ProcessCreateException|ProcessRunException $e) {
     // TODO: Handle exceptions
 }
@@ -27,16 +28,14 @@ try{
 ```php
 try{
     $stdoutStrategy = new BufferedOutputStrategy();
-    $stderrStrategy = new BufferedOutputStrategy();
 
-    $result = (new ProcessService('/usr/bin/program'))
+    $result = (new ProcessService('/usr/bin/node'))
                 ->setStdoutStrategy($stdoutStrategy)
-                ->setStderrStrategy($stderrStrategy)
                 ->setInput('--version')
                 ->run();
     
-    $stdout = $stdoutStrategy->getOutput();
-    $stderr = $stderrStrategy->getOutput();
+    echo $stdoutStrategy->getOutput();
+    // v22.16.0
 } catch (ProcessCreateException|ProcessRunException $e) {
     // TODO: Handle exceptions
 }
@@ -48,9 +47,10 @@ try{
 try{
     $stdoutStrategy = new StreamedOutputStrategy(
         fn(string $data) => print $data
+        // v22.16.0
     )->setChunkLength(128);
 
-    $result = (new ProcessService('/usr/bin/program'))
+    $result = (new ProcessService('/usr/bin/node'))
                 ->setStdoutStrategy($stdoutStrategy)
                 ->setInput('--version')
                 ->run();
