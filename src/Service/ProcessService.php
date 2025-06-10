@@ -49,7 +49,7 @@ class ProcessService
         fclose($pipes[2]);
 
         $signal = proc_close($proc);
-        $result = new ProcessResult($signal, $stdout);;
+        $result = new ProcessResult($signal, $stdout);
 
         if ($signal > 2) {
             throw new ProcessRunException($result, "Process failed with signal $signal");
