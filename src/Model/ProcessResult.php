@@ -5,9 +5,13 @@ namespace Saggre\ProcessManager\Model;
 class ProcessResult
 {
     public function __construct(
-        public int    $exitCode,
-        public string $stdout,
+        protected int $exitCode,
     )
     {
+    }
+
+    public function getExitCode(): int
+    {
+        return $this->exitCode;
     }
 }

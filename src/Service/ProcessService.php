@@ -5,51 +5,67 @@ namespace Saggre\ProcessManager\Service;
 use Saggre\ProcessManager\Exception\ProcessCreateException;
 use Saggre\ProcessManager\Exception\ProcessRunException;
 use Saggre\ProcessManager\Model\ProcessResult;
+use Saggre\ProcessManager\Strategy\OutputStrategyInterface;
 use Stringable;
 
 class ProcessService
 {
     public function __construct(
-        protected string|Stringable $binaryPath,
+        protected string|Stringable        $binaryPath,
+        protected string|Stringable        $input = '',
+        protected ?OutputStrategyInterface &$stdoutStrategy = null,
+        protected ?OutputStrategyInterface &$stderrStrategy = null,
     )
     {
     }
 
+    public function setInput(Stringable|string $input): ProcessService
+    {
+        $this->input = $input;
+        return $this;
+    }
+
+    public function setStdoutStrategy(OutputStrategyInterface $stdoutStrategy): ProcessService
+    {
+        $this->stdoutStrategy = $stdoutStrategy;
+        return $this;
+    }
+
+    public function setStderrStrategy(OutputStrategyInterface $stderrStrategy): ProcessService
+    {
+        $this->stderrStrategy = $stderrStrategy;
+        return $this;
+    }
 
     /**
-     * Run the phpcs process.
+     * Run the defined process.
      *
-     * @param string|Stringable $input
-     * @param $onOutput
      * @return ProcessResult
      * @throws ProcessRunException
      * @throws ProcessCreateException
      */
-    public function run(string|Stringable $input = '', $onOutput = null): ProcessResult
+    public function run(): ProcessResult
     {
-        $proc = $this->createProcess($input, $pipes);
+        $process = $this->createProcess($this->input, $pipes);
 
         // Close input pipe.
         fclose($pipes[0]);
 
-        $stdout = '';
-
         $this->processPipe(
             $pipes[1],
-            function ($line) use ($onOutput, &$stdout) {
-                $stdout .= $line;
+            fn($line) => $this->stdoutStrategy?->processOutputChunk($line)
+        );
 
-                if (is_callable($onOutput)) {
-                    call_user_func($onOutput);
-                }
-            }
+        $this->processPipe(
+            $pipes[2],
+            fn($line) => $this->stderrStrategy?->processOutputChunk($line)
         );
 
         fclose($pipes[1]);
         fclose($pipes[2]);
 
-        $signal = proc_close($proc);
-        $result = new ProcessResult($signal, $stdout);
+        $signal = proc_close($process);
+        $result = new ProcessResult($signal);
 
         if ($signal > 2) {
             throw new ProcessRunException($result, "Process failed with signal $signal");
