@@ -1,5 +1,7 @@
 {
     "name": "saggre/process-manager",
+    "description": "A library used to call external binaries with PHP",
+    "license": "CC-BY-NC-4.0",
     "type": "library",
     "autoload": {
         "psr-4": {
